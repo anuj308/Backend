@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // return yes
 
   const { fullName, userName, email, password } = req.body;
-  console.log(email, password);
+  // console.log(email, password);
 
   if (
     [fullName, userName, email, password].some(
@@ -464,3 +464,5 @@ export {
   getUserChannelProfile,
   getWatchHistory,
 };
+
+// what not wotking are getchannelinfo  and updateaccountdeatils
