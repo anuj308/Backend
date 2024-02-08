@@ -19,5 +19,5 @@ const commentSchema = new Schema(
   { timestamps: true }
 );
 
-tweetSchema.plugin(mongooseAggregatePaginate);
+commentSchema.plugin(mongooseAggregatePaginate);
 export const Comment = new mongoose.model("Comment", commentSchema);
