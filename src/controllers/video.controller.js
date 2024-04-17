@@ -13,11 +13,13 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (
     [title, description, videoLocalPath, thumbnailLocalPath].some(
       (fields) => fields?.trim() === ""
-    )
+    ) 
   ) {
     throw new ApiError(400, "all fields are required");
   }
-  // let see upppp
+  // let see upppp testing 
+  // console.log(videoLocalPath)
+  // console.log(thumbnailLocalPath)
 
   const video = await uploadOnCloudinary(videoLocalPath);
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
@@ -29,8 +31,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const videoUpload = await Video.create({
     title,
     description,
-    videoFile: video,
-    thumbnail,
+    videoFile: video.url,
+    thumbnail : thumbnail.url,
     duration: video.duration,
     view: 0,
     isPublished: true,

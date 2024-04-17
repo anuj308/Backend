@@ -256,11 +256,12 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
 
+  // console.log(fullName,email); //for testing
   if (!(fullName || email)) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -272,6 +273,10 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       new: true, //from this the updated information is returned
     }
   ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ApiError(500,"internal server error")
+  }
 
   return res
     .status(200)
@@ -327,16 +332,18 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-  const { username } = req.params;
+  const { userName } = req.params;
+  // for testing
+  console.log(userName)
 
-  if (!username?.trim()) {
+  if (!userName?.trim()) {
     throw new ApiError(400, "username is missing");
   }
-
+// check later the spelling of username in model
   const channel = await User.aggregate([
     {
       $match: {
-        username: username?.toLowerCase(),
+        userName: userName?.toLowerCase(),
       },
     },
     {
