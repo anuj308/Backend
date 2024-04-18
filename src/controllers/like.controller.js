@@ -2,38 +2,54 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Like } from "../models/like.models.js";
-import mongoose, {isValidObjectId} from "mongoose"
+import mongoose from "mongoose";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
-  const c = mongoose.isValidObjectId(videoId)//testing if it works or not if works then do in all
-  
-  if (!c) {
+  if (!videoId) {
     throw new ApiError(400, "video id is missing");
   }
 
   const likeExist = await Like.aggregate([
     {
       $match: {
-        video: new mongoose.Types.ObjectId(videoId),
+        $and: [
+          { video: new mongoose.Types.ObjectId(videoId) },
+          { likeBy: new mongoose.Types.ObjectId(req.user?._id) },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 1,
       },
     },
   ]);
+  // this has taken a lot of time for understanding what the error is
+  // to get the _id from an object which is in array
+  // can you can write this in better format please
 
-  if (!likeExist) {
+  let a;
+  likeExist.forEach((item) => {
+    const _id = item._id;
+    a = _id;
+  });
+
+  if (likeExist.length > 0) {
+    const likedelete = await Like.deleteOne({ _id: a });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, likedelete, "the video is Unliked"));
+  } else {
     const like = await Like.create({
       video: videoId,
-      likedBy: req.user?._id,
+      likeBy: req.user?._id,
     });
+
     return res
       .status(200)
-      .json(new ApiResponse(200, like, "the video is liked"));
-  } else {
-    const like = await Like.deleteOne((_id = likeExist?._id));
-    return res
-      .status(200)
-      .json(new ApiResponse(200, like, "the video is Unliked"));
+      .json(new ApiResponse(200, { like }, `the video is liked`));
   }
 });
 
@@ -44,27 +60,41 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     throw new ApiError(400, "tweet id is missing");
   }
 
-  const tweetExist = await Like.aggregate([
+  const likeExist = await Like.aggregate([
     {
       $match: {
-        tweet : new mongoose.Types.ObjectId(tweetId),
+        $and: [
+          { tweet: new mongoose.Types.ObjectId(tweetId) },
+          { likeBy: new mongoose.Types.ObjectId(req.user?._id) },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 1,
       },
     },
   ]);
+  let a;
+  likeExist.forEach((item) => {
+    const _id = item._id;
+    a = _id;
+  });
 
-  if (!tweetExist) {
+  if (likeExist.length > 0) {
+    const likedelete = await Like.deleteOne({ _id: a });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, likedelete, "the tweet is Unliked"));
+  } else {
     const like = await Like.create({
       tweet: tweetId,
-      likedBy: req.user?._id,
+      likeBy: req.user?._id,
     });
+
     return res
       .status(200)
-      .json(new ApiResponse(200, like, "the tweet is liked"));
-  } else {
-    const like = await Like.deleteOne((_id = tweetExist?._id));
-    return res
-      .status(200)
-      .json(new ApiResponse(200, like, "the tweet is Unliked"));
+      .json(new ApiResponse(200, { like }, `the tweet is liked`));
   }
 });
 
@@ -72,45 +102,59 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
 
   if (!commentId) {
-    throw new ApiError(400, "video id is missing");
+    throw new ApiError(400, "tweet id is missing");
   }
 
-  const commmentExist = await Like.aggregate([
+  const likeExist = await Like.aggregate([
     {
       $match: {
-        comment: new mongoose.Types.ObjectId(commentId),
+        $and: [
+          { comment: new mongoose.Types.ObjectId(commentId) },
+          { likeBy: new mongoose.Types.ObjectId(req.user?._id) },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 1,
       },
     },
   ]);
+  let a;
+  likeExist.forEach((item) => {
+    const _id = item._id;
+    a = _id;
+  });
 
-  if (!commmentExist) {
+  if (likeExist.length > 0) {
+    const likedelete = await Like.deleteOne({ _id: a });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, likedelete, "the comment is Unliked"));
+  } else {
     const like = await Like.create({
       comment: commentId,
-      likedBy: req.user?._id,
+      likeBy: req.user?._id,
     });
+
     return res
       .status(200)
-      .json(new ApiResponse(200, like, "the comment is liked"));
-  } else {
-    const like = await Like.deleteOne((_id = commmentExist?._id));
-    return res
-      .status(200)
-      .json(new ApiResponse(200, like, "the comment is Unliked"));
+      .json(new ApiResponse(200, { like }, `the comment is liked`));
   }
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
   const likedVideos = await Like.aggregate([
     {
-      $match: { likedBy: new mongoose.Types.ObjectId(req.user?._id) },
+      $match: { likeBy: new mongoose.Types.ObjectId(req.user?._id) },
     },
     {
       $lookup: {
         from: "videos",
-        localField: "likedBy",
+        localField: "video",
         foreignField: "_id",
         as: "likedVideos",
-        pipline: [
+        pipeline: [
           {
             $lookup: {
               from: "users",

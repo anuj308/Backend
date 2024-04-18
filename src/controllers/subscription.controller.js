@@ -30,16 +30,18 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     const subcriptiondelete = await Subscription.deleteOne({
       $and: [{ channel: subscriberId }, { subscriber: req.user?._id }],
     });
+    // console.log("deleted subscription")
   }else{
     var subscriptionNew = await Subscription.create({
       channel : subscriberId,
       subscriber : req.user?._id,
     }) 
+    // console.log("created subscription")
   }
 
   return res
   .status(200)
-  .json(200, `channel ${subscriptionNew ? "subscribed": "unsubcribed"}  sucessfully`)
+  .json(new ApiResponse(200, `channel ${subscriptionNew ? "subscribed": "unsubcribed"}  sucessfully`))
 
 });
 

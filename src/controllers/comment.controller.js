@@ -16,26 +16,26 @@ const getVideoComments = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
-        form: "users",
-        localfield: "owner",
-        foreginfield: "_id",
-        as: "ownerOfComment",
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
         pipeline: [
           {
             $project: {
               fullName: 1,
-              avatar: 1,
               userName: 1,
+              avatar: 1,
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
             },
           },
         ],
-      },
-    },
-    {
-      $addFields: {
-        owner: {
-          $first: "$owner",
-        },
       },
     },
   ]);
@@ -69,7 +69,7 @@ const addComment = asyncHandler(async (req, res) => {
   const comment = await Comment.create({
     content: content,
     video: videoId,
-    owner: req.users?._id,
+    owner: req.user?._id,
   });
 
   if (!comment) {
