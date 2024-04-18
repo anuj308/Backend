@@ -2,17 +2,20 @@ import mongoose from "mongoose";
 import { Video } from "../models/video.models.js";
 import { Subscription } from "../models/subscription.models.js";
 import { Like } from "../models/like.models.js";
+import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getChannelStats = asyncHandler(async (req, res) => {
   // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
-// i will do it later
+  // i will do it later
+  console.log(req.user);
+
   const channel = await User.aggregate([
     {
       $match: {
-        username: username?.toLowerCase(),
+        _id : new mongoose.Types.ObjectId(req.user?._id)
       },
     },
     {
@@ -69,7 +72,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
   const video = await Video.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user?._id),
+        owner : new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
@@ -99,7 +102,10 @@ const getChannelStats = asyncHandler(async (req, res) => {
   ]);
 
   if (!video) {
-    throw new ApiError(500, "something went wrong while getting user all videos");
+    throw new ApiError(
+      500,
+      "something went wrong while getting user all videos"
+    );
   }
 
   return res
@@ -107,7 +113,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { video ,channel},
+        { video, channel },
         "successfully fetched all the users videos"
       )
     );
@@ -119,7 +125,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
   const video = await Video.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user?._id),
+        owner: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
