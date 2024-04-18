@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 import { User } from "../models/user.models.js";
 import { Subscription } from "../models/subscription.models.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -6,8 +6,41 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const toggleSubscription = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
+  const { subscriberId } = req.params;
   //i do not know how to\ do it
+
+  if (!subscriberId) {
+    throw new ApiError(400, "subscriberId is required");
+  }
+
+  const subscription = await Subscription.aggregate([
+    {
+      $match: {
+        channel: new mongoose.Types.ObjectId(subscriberId),
+      },
+    },
+  ]);
+
+  if (!subscription) {
+    throw new ApiError(500, "internal server error");
+  }
+
+  if (subscription.length > 0) {
+    // means it is subscribed
+    const subcriptiondelete = await Subscription.deleteOne({
+      $and: [{ channel: subscriberId }, { subscriber: req.user?._id }],
+    });
+  }else{
+    var subscriptionNew = await Subscription.create({
+      channel : subscriberId,
+      subscriber : req.user?._id,
+    }) 
+  }
+
+  return res
+  .status(200)
+  .json(200, `channel ${subscriptionNew ? "subscribed": "unsubcribed"}  sucessfully`)
+
 });
 
 // controller to return subscriber list of a channel
@@ -18,7 +51,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     throw new ApiError(400, "channelId is missing");
   }
 
-  const subscriberList = await Subscription.aggregete([
+  const subscriberList = await Subscription.aggregate([
     {
       $match: {
         channel: new mongoose.Types.ObjectId(channelId),
@@ -27,10 +60,10 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "users",
-        localFiled: "subscriber",
-        foreignFiled: "_id",
+        localField: "subscriber",
+        foreignField: "_id",
         as: "subscriber",
-        pipleline: [
+        pipeline: [
           {
             $project: {
               fullName: 1,
@@ -76,7 +109,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     throw new ApiError(400, " id is required");
   }
 
-  const channelList = await Subscription.aggregete([
+  const channelList = await Subscription.aggregate([
     {
       $match: {
         subscriber: subscriberId,
@@ -85,10 +118,10 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "users",
-        localField: "subscriber",
+        localField: "channel",
         foreignField: "_id",
         as: "channel",
-        pipleline: [
+        pipeline: [
           {
             $project: {
               fullName: 1,
@@ -109,21 +142,14 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
   ]);
 
   if (!channelList) {
-    throw new ApiError(
-        500,
-        "something went wrong while getting channel list"
-      );
-    }
-  
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          channelList,
-          "sucessfully fetched channel list"
-        )
-      );
+    throw new ApiError(500, "something went wrong while getting channel list");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channelList, "sucessfully fetched channel list")
+    );
 });
 
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };

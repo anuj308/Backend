@@ -1,17 +1,19 @@
 import mongoose, { Schema } from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-const tweetSchema = new Schema({
-    owner:{
-        type: Schema.Types.ObjectId
-        ,ref:"User"
+const tweetSchema = new Schema(
+  {
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    content : {
-        type:String,
-        required:true
-    }
+    content: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-},{timestamps:true})
-
-tweetSchema.plugin(mongooseAggregatePaginate)
-export const Tweet = new mongoose.model("Tweet",tweetSchema)
+tweetSchema.plugin(mongooseAggregatePaginate);
+export const Tweet = new mongoose.model("Tweet", tweetSchema);

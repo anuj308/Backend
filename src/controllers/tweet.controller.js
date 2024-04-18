@@ -1,20 +1,20 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
+ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Tweet } from "../models/tweet.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 // import jwt from "jsonwebtoken";
-// import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const createTweet = asyncHandler(async (req, res) => {
   const { content } = req.body;
 
-  if (!tweetContent) {
+  if (!content) {
     throw new ApiError(400, " Content is required");
   }
   const tweet = await Tweet.create({
-    ownner: req.user,
+    owner: req.user?._id,
     content,
-  });
+  });  
 
   if (!tweet) {
     throw new ApiError(500, "something went wrong while creating content");
@@ -32,10 +32,10 @@ const getUserTweets = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User id is missing");
   }
 
-  const tweet = await Tweet.aggreate([
+  const tweet = await Tweet.aggregate([
     {
       $match: {
-        owner: userId,
+        owner: new mongoose.Types.ObjectId(userId),
       },
     },
   ]);
@@ -64,7 +64,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200), { tweet }, "Sucessfully deleted the tweet");
+    .json(new ApiResponse(200,  tweet , "Sucessfully deleted the tweet"));
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
@@ -94,7 +94,7 @@ const updateTweet = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200), { tweet }, "Sucessfully Updated the tweet");
+    .json(new ApiResponse(200, { tweet } , "Sucessfully Updated the tweet"));
 });
 
 export { createTweet, getUserTweets,updateTweet,deleteTweet };

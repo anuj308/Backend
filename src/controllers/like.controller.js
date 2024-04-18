@@ -7,7 +7,8 @@ import mongoose, {isValidObjectId} from "mongoose"
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
-  const c = videoId.isValidObjectId()//testing if it works or not if works then do in all
+  const c = mongoose.isValidObjectId(videoId)//testing if it works or not if works then do in all
+  
   if (!c) {
     throw new ApiError(400, "video id is missing");
   }

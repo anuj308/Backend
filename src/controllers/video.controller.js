@@ -14,7 +14,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     [title, description, videoLocalPath, thumbnailLocalPath].some(
       (fields) => fields?.trim() === ""
     ) 
-  ) {
+  ) { 
     throw new ApiError(400, "all fields are required");
   }
   // let see upppp testing 
@@ -57,28 +57,31 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   const video = await Video.findById(videoId);
 
+  if (!video) {
+    throw new ApiError(404,"video not found or invalid video id")
+  }
   return res
     .status(200)
     .json(new ApiResponse(200, video, " fetched video details"));
 });
 
-const updateVideo = asyncHandler(async (req, res) => {
+const updateVideo = asyncHandler(async (req, res) => {  
   const { videoId } = req.params;
   const { title, description } = req.body;
   const thumbnail = req.file?.path;
 
-  if (title || description || thumbnail) {
+  if (!(title || description || thumbnail)) {
     throw new ApiError(400, "ALl fields are required");
   }
 
-  const thumbnailNew = uploadOnCloudinary(thumbnail);
+  const thumbnailNew = await uploadOnCloudinary(thumbnail);
 
   const updateVideoInfo = await Video.findByIdAndUpdate(
     videoId,
     {
       title,
       description,
-      thumbnail: thumbnailNew,
+      thumbnail: thumbnailNew.url,
     },
     {
       new: true,
@@ -103,7 +106,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError("videoID is missing");
   }
 
-  const video = await Video.deleteOne((_id = videoId));
+  const video = await Video.deleteOne({_id : videoId});
 
   if (!video) {
     throw new ApiError(500, "something went wrong while deleting video");
@@ -123,16 +126,16 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
   const video = await Video.findById(videoId);
 
-  if (!video.isPublished == true) {
-    const videoStatus = await Video.findByIdAndUpdate(
+  if (video.isPublished == true) {
+    var videoStatus = await Video.findByIdAndUpdate(
       videoId,
       {
         isPublished: false,
       },
       { new: true }
-    );
-  } else {
-    const videoStatus = await Video.findByIdAndUpdate(
+      );
+    } else {
+      var videoStatus = await Video.findByIdAndUpdate(
       videoId,
       {
         isPublished: true,
@@ -153,14 +156,14 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
   //TODO: get all videos based on query, sort, pagination
   // while updated this later as i have to study aggregation pipleline for this
 
   const video = await Video.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(userId),
+        owner: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
@@ -190,7 +193,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
   ]);
 
   if (!video) {
-    throw new ApiError(500, "somrthing went wrong while getting videos");
+    throw new ApiError(500, "something went wrong while getting videos");
   }
 
   return res

@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  // const { page = 1, limit = 10 } = req.query;
 
   const videoComment = await Comment.aggregate([
     {
@@ -19,8 +19,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
         form: "users",
         localfield: "owner",
         foreginfield: "_id",
-        as: "owner",
-        pipline: [
+        as: "ownerOfComment",
+        pipeline: [
           {
             $project: {
               fullName: 1,
@@ -83,15 +83,17 @@ const addComment = asyncHandler(async (req, res) => {
 
 const updateComment = asyncHandler(async (req, res) => {
   const { content } = req.body;
-  const { videoId } = req.params;
+  const { commentId } = req.params;
 
-  if (!(content && videoId)) {
+  if (!(content && commentId)) {
     throw new ApiError(400, " content and videoId is required");
   }
 
-  const comment = await Comment.findByIdAndUpdate({
-    content,
-  });
+  const comment = await Comment.findByIdAndUpdate(
+    commentId,
+    { content },
+    { new: true }
+  );
 
   if (!comment) {
     throw new ApiError(500, "somrthing went wrong while adding comment");
@@ -103,13 +105,13 @@ const updateComment = asyncHandler(async (req, res) => {
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
+  const { commentId } = req.params;
 
-  if (!videoId) {
+  if (!commentId) {
     throw new ApiError(400, " videoId is required");
   }
 
-  const comment = await Comment.deleteOne({ video: videoId }); // double quote in deleteOne
+  const comment = await Comment.deleteOne({ _id: new mongoose.Types.ObjectId(commentId) }); // double quote in deleteOne
 
   if (!comment) {
     throw new ApiError(500, "somrthing went wrong while adding comment");
@@ -120,4 +122,4 @@ const deleteComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, comment, "Successfully deleted comment"));
 });
 
-export {getVideoComments,addComment,updateComment,deleteComment};
+export { getVideoComments, addComment, updateComment, deleteComment };

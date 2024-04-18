@@ -13,8 +13,8 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
   const playlist = await Playlist.create({
     name,
-    description,
-    owner: req.user?._id,
+    description, 
+    owner: req.user?._id, 
   });
 
   if (!playlist) {
@@ -35,10 +35,10 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     throw new ApiError(400, "UserId is required");
   }
 
-  const playlists = await Playlist.aggregrate([
+  const playlists = await Playlist.aggregate([
     {
       $match: {
-        owner: userId,
+        owner: new mongoose.Types.ObjectId(userId),
       },
     },
     {
@@ -145,19 +145,15 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   const { playlistId, videoId } = req.params;
   // TODO: remove video from playlist
-  if (!(playlist && videoId)) {
+  if (!(playlistId && videoId)) {
     throw new ApiError(400, "all fields are required");
   }
-  const playlist = await Playlist.aggregrate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(playlistId),
-      },
-    },
-    {
-      $pull: { videos: { $in: [`${videoId}`] } },
-    },
-  ]);
+  
+  const playlist = Playlist.updateOne(
+    { _id: (new mongoose.Types.ObjectId(playlistId)).toString() }, 
+    { $pull: { videoIds: (new mongoose.Types.ObjectId(videoId)).toString() } } 
+  );
+    // not working
 
   if (!playlist) {
     throw new ApiError(
@@ -180,7 +176,8 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 const deletePlaylist = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   // TODO: delete playlist
-  if (!(playlist && videoId)) {
+
+  if (!(playlistId)) {
     throw new ApiError(400, "all fields are required");
   }
 
